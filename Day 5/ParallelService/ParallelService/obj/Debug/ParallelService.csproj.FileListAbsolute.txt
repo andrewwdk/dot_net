@@ -1,0 +1,7 @@
+D:\Courses\epam_git\dot_net\Day 5\ParallelService\ParallelService\bin\Debug\ParallelService.exe.config
+D:\Courses\epam_git\dot_net\Day 5\ParallelService\ParallelService\bin\Debug\ParallelService.exe
+D:\Courses\epam_git\dot_net\Day 5\ParallelService\ParallelService\bin\Debug\ParallelService.pdb
+D:\Courses\epam_git\dot_net\Day 5\ParallelService\ParallelService\obj\Debug\ParallelService.csprojAssemblyReference.cache
+D:\Courses\epam_git\dot_net\Day 5\ParallelService\ParallelService\obj\Debug\ParallelService.csproj.CoreCompileInputs.cache
+D:\Courses\epam_git\dot_net\Day 5\ParallelService\ParallelService\obj\Debug\ParallelService.exe
+D:\Courses\epam_git\dot_net\Day 5\ParallelService\ParallelService\obj\Debug\ParallelService.pdb
