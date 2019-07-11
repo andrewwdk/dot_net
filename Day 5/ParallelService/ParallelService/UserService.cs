@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ParallelService
@@ -12,6 +13,8 @@ namespace ParallelService
         const int blockSize = 144;
         const string path = @"D:\file.dat";
         private List<Tuple<int, long>> list = new List<Tuple<int, long>>();
+        private object locker = new object();
+        private ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         public UserService()
         {
@@ -23,69 +26,93 @@ namespace ParallelService
             if (user == null)
                 throw new ArgumentNullException();
 
-            if (UserExists(user.Id))
-                throw new UserExistsException("User with such id has already existed!");
+            lock (locker)
+            {
+                if (UserExists(user.Id))
+                    throw new UserExistsException("User with such id has already existed!");
+            }
 
+            _rwLock.EnterWriteLock();
             using (var fileStream = new FileStream(path, FileMode.Append, FileAccess.Write))
             {
-                using (var bw = new BinaryWriter(fileStream))
-                {
-                    list.Add(new Tuple<int, long>(user.Id, bw.BaseStream.Length));
+                    using (var bw = new BinaryWriter(fileStream))
+                    {
+                        list.Add(new Tuple<int, long>(user.Id, bw.BaseStream.Length));
 
-                    bw.Write(user.Id);
-                    bw.Write(user.FirstName);
-                    bw.Write(user.LastName);
-                    bw.Write(user.Email);
-                    bw.Write(user.Login);
-                    bw.Write(user.BirthDate.ToBinary());
-                    bw.Write(user.LastEntry.ToBinary());
-                }
-            }    
+                        bw.Write(user.Id);
+                        bw.Write(user.FirstName);
+                        bw.Write(user.LastName);
+                        bw.Write(user.Email);
+                        bw.Write(user.Login);
+                        bw.Write(user.BirthDate.ToBinary());
+                        bw.Write(user.LastEntry.ToBinary());
+                    }
+            }
+            _rwLock.ExitWriteLock();
+
         }
 
         public User Get(int userId)
         {
-            var offset = GetOffset(userId);
+            long offset;
+            User user;
+
+            lock (locker)
+            {
+                offset = GetOffset(userId);
+            }
 
             if (offset == -1)
                 return null;
 
-            using (var fs = new FileStream(path, FileMode.Open))
+            try
             {
-                fs.Position = offset;
-                using (var br = new BinaryReader(fs))
+                _rwLock.EnterWriteLock();
+                using (var fs = new FileStream(path, FileMode.Open))
                 {
-                    return new User(br.ReadInt32(), br.ReadString(), br.ReadString(), br.ReadString(), br.ReadString(),
-                        DateTime.FromBinary(br.ReadInt64()), DateTime.FromBinary(br.ReadInt64()));
+                    fs.Position = offset;
+                    using (var br = new BinaryReader(fs))
+                    {
+                        user = new User(br.ReadInt32(), br.ReadString(), br.ReadString(), br.ReadString(), br.ReadString(),
+                            DateTime.FromBinary(br.ReadInt64()), DateTime.FromBinary(br.ReadInt64()));
+                    }
                 }
             }
+            finally
+            {
+                _rwLock.ExitWriteLock();
+            }
+
+            return user;
         }
 
         private void ReadOrCreateStorage()
         {
+            _rwLock.EnterReadLock();
             if (!File.Exists(path))
             {
-                using(var fs = File.Create(path)){}
+                    using (var fs = File.Create(path)) { }
             }
             else
             {
-                using (var fs = new FileStream(path, FileMode.Open))
-                {
-                    fs.Position = 0;
-                    using (var br = new BinaryReader(fs))
+                    using (var fs = new FileStream(path, FileMode.Open))
                     {
-                        int offsetInsex = 0;
-
-                        while (br.BaseStream.Position != br.BaseStream.Length)
+                        fs.Position = 0;
+                        using (var br = new BinaryReader(fs))
                         {
-                            var id = br.ReadInt32();
-                            br.ReadBytes(blockSize - sizeof(Int32));
-                            list.Add(new Tuple<int, long>(id, offsetInsex * blockSize));
-                            offsetInsex++;
+                            int offsetInsex = 0;
+
+                            while (br.BaseStream.Position != br.BaseStream.Length)
+                            {
+                                var id = br.ReadInt32();
+                                br.ReadBytes(blockSize - sizeof(Int32));
+                                list.Add(new Tuple<int, long>(id, offsetInsex * blockSize));
+                                offsetInsex++;
+                            }
                         }
                     }
-                }
             }
+            _rwLock.ExitReadLock();
         }
 
         private bool UserExists(int id)
