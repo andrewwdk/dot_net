@@ -27,15 +27,12 @@ namespace ParallelService
             if (user == null)
                 throw new ArgumentNullException();
 
-            lock (locker)
-            {
-                if (UserExists(user.Id))
-                    throw new UserExistsException("User with such id has already existed!");
-            }
-
             await semaphore.WaitAsync();
             try
             {
+                if (UserExists(user.Id))
+                    throw new UserExistsException("User with such id has already existed!");
+
                 using (var fileStream = new FileStream(path, FileMode.Append, FileAccess.Write))
                 {
                     using (var bw = new BinaryWriter(fileStream))
@@ -51,6 +48,8 @@ namespace ParallelService
                         bw.Write(user.LastEntry.ToBinary());
                     }
                 }
+
+                Console.WriteLine("Still in progress...");
             }
             finally
             {
