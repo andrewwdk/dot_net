@@ -8,8 +8,8 @@ namespace ParallelService
 {
      interface IUserService
     {
-        void Add(User user);
+        Task AddAsync(User user);
 
-        Task<User> Get(int userId);
+        Task<User> GetAsync(int userId);
     }
 }

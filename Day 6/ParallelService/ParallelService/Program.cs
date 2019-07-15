@@ -20,11 +20,11 @@ namespace ParallelService
 
                 foreach(int id in ids)
                 {
-                    tasks[id-1] = Task.Run(() =>
+                    tasks[id-1] =  Task.Run(async () =>
                     {
-                        //service.Add(new User(id, "Andrew" + id.ToString(), "ss", "s", "b", DateTime.Now, DateTime.Now));
+                        //await service.AddAsync(new User(id, "Andrew" + id.ToString(), "ss", "s", "b", DateTime.Now, DateTime.Now));
 
-                        User user = service.Get(id).Result;
+                        User user = service.GetAsync(id).Result;
                         Console.WriteLine("{0} {1}", user.Id, user.FirstName);
                     });
                 }

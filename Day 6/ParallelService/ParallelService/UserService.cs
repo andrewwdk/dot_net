@@ -22,7 +22,7 @@ namespace ParallelService
            ReadOrCreateStorage();
         }
 
-        public async void Add(User user)
+        public async Task AddAsync(User user)
         {
             if (user == null)
                 throw new ArgumentNullException();
@@ -58,7 +58,7 @@ namespace ParallelService
             }
         }
 
-        public async Task<User> Get(int userId)
+        public async Task<User> GetAsync(int userId)
         {
             long offset;
             User user;
